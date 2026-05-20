@@ -674,7 +674,7 @@ function exportExcel(type){
   const ds=now.toLocaleDateString('de-DE');
   const mn=now.toLocaleString('de-DE',{month:'long',year:'numeric'});
   const totalStock=DB.models.reduce((s,m)=>s+Math.max(0,stockFor(m)),0);
-  const s1=[['FAHRRAD-LAGERVERWALTUNG – INVENTUR'],[`Erstellt am: ${ds}`],[`Monat: ${mn}`],[],['Modell','Gesamt Eingang','Gesamt Ausgang','Aktueller Bestand','Status'],...DB.models.map(m=>{const i=DB.entries.filter(e=>e.model===m).reduce((s,e)=>s+e.qty,0);const o=DB.exits.filter(e=>e.model===m).reduce((s,e)=>s+e.qty,0);const st=i-o;return[m,i,o,st,st===0?'Leer':st<=2?'Niedriger Bestand':'OK'];}),[];['GESAMT','','',totalStock,'']];
+  const s1=[['FAHRRAD-LAGERVERWALTUNG – INVENTUR'],[`Erstellt am: ${ds}`],[`Monat: ${mn}`],[],['Modell','Gesamt Eingang','Gesamt Ausgang','Aktueller Bestand','Status'],...DB.models.map(m=>{const i=DB.entries.filter(e=>e.model===m).reduce((s,e)=>s+e.qty,0);const o=DB.exits.filter(e=>e.model===m).reduce((s,e)=>s+e.qty,0);const st=i-o;return[m,i,o,st,st===0?'Leer':st<=2?'Niedriger Bestand':'OK'];}), [],['GESAMT','','',totalStock,'']];
   const ws1=XLSX.utils.aoa_to_sheet(s1);ws1['!cols']=[{wch:30},{wch:16},{wch:16},{wch:18},{wch:18}];XLSX.utils.book_append_sheet(wb,ws1,'Inventur');
   const s2=[['WARENEINGANG'],[`Export: ${ds}`],[],['Datum','Modell','Anzahl','Notiz'],...[...DB.entries].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(e=>[fmtDate(e.date),e.model,e.qty,e.note||''])];
   const ws2=XLSX.utils.aoa_to_sheet(s2);ws2['!cols']=[{wch:14},{wch:30},{wch:10},{wch:30}];XLSX.utils.book_append_sheet(wb,ws2,'Wareneingang');
