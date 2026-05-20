@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MotionWerk Lager – Fahrradverwaltung</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap');
+  :root {
+    --bg:#0e1a14;--surface:#152019;--surface2:#1c2e22;--border:#2a3f30;
+    --accent:#4caf7d;--accent2:#f0a500;--text:#e8f0ea;--muted:#7a9a82;
+    --danger:#e05252;--radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  h1,h2,h3{font-family:'DM Serif Display',serif;}
+  .app{max-width:1100px;margin:0 auto;padding:24px 20px;}
+
+  /* HEADER */
+  .header{display:flex;align-items:center;gap:16px;margin-bottom:28px;flex-wrap:wrap;}
+  .header-icon{font-size:36px;}
+  .header h1{font-size:30px;color:var(--accent);line-height:1;}
+  .header p{color:var(--muted);font-size:13px;margin-top:3px;}
+  .header-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+
+  /* BANNER */
+  .month-end-banner{background:linear-gradient(135deg,#3d2e0a,#2a1f00);border:2px solid var(--accent2);border-radius:var(--radius);padding:16px 20px;margin-bottom:22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .month-end-banner .icon{font-size:26px;flex-shrink:0;}
+  .month-end-banner .text{flex:1;}
+  .month-end-banner h3{color:var(--accent2);font-size:16px;margin-bottom:2px;}
+  .month-end-banner p{color:#c8a060;font-size:13px;}
+
+  /* TABS */
+  .tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--surface);border-radius:var(--radius);padding:5px;border:1px solid var(--border);flex-wrap:wrap;}
+  .tab{flex:1;min-width:90px;padding:9px 10px;border-radius:8px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--muted);background:transparent;transition:all .2s;}
+  .tab.active{background:var(--accent);color:#0e1a14;}
+  .tab:hover:not(.active){color:var(--text);background:var(--surface2);}
+
+  /* CARDS */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:18px;}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+  .stat-val{font-family:'DM Serif Display',serif;font-size:34px;color:var(--accent);line-height:1;}
+  .stat-val.amber{color:var(--accent2);}
+  .stat-label{font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.5px;}
+
+  /* FORMS */
+  .form-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  input,select{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border .2s;}
+  input:focus,select:focus{border-color:var(--accent);}
+  input::placeholder{color:var(--muted);}
+  select option{background:#1c2e22;}
+
+  /* BUTTONS */
+  .btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;transition:all .2s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
+  .btn-green{background:var(--accent);color:#0e1a14;}
+  .btn-green:hover{background:#5dcc94;}
+  .btn-amber{background:var(--accent2);color:#0e1a14;}
+  .btn-amber:hover{background:#ffbd2e;}
+  .btn-red{background:transparent;border:1px solid var(--danger);color:var(--danger);}
+  .btn-red:hover{background:var(--danger);color:#fff;}
+  .btn-ghost{background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
+  .btn-ghost:hover{color:var(--text);}
+  .btn-excel{background:#1a4d2e;border:1px solid #2d7a4a;color:#6dcc94;}
+  .btn-excel:hover{background:#22613a;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  /* TABLE */
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  thead th{text-align:left;padding:9px 12px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);font-weight:500;}
+  tbody td{padding:10px 12px;border-bottom:1px solid var(--border);}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover td{background:var(--surface2);}
+  .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+  .badge-green{background:#1a3d2a;color:var(--accent);}
+  .badge-amber{background:#3d2e0a;color:var(--accent2);}
+  .badge-red{background:#3d1010;color:var(--danger);}
+
+  /* EXIT ITEMS */
+  .exit-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface2);border-radius:8px;margin-bottom:7px;}
+  .exit-item input[type=number]{width:80px;}
+  .exit-item label{flex:1;font-size:14px;}
+  .exit-item .stock-tag{font-size:12px;color:var(--muted);}
+
+  /* CONFIRMATION BANNER */
+  .confirm-banner{background:#0f2318;border:2px solid var(--accent);border-radius:var(--radius);padding:18px 20px;margin-bottom:18px;}
+  .confirm-banner .cb-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .confirm-banner .cb-title{font-weight:600;font-size:15px;color:var(--accent);}
+  .confirm-banner .cb-sub{font-size:13px;color:var(--muted);margin-top:2px;}
+
+  /* MODEL TAGS */
+  .model-tag{display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 10px 4px 12px;font-size:13px;margin:3px;}
+  .model-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:0;}
+  .model-del:hover{color:var(--danger);}
+
+  /* MISC */
+  .filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+  .filter-bar label{font-size:13px;color:var(--muted);}
+  .sep{border:none;border-top:1px solid var(--border);margin:16px 0;}
+  .empty{text-align:center;color:var(--muted);padding:36px;font-size:14px;}
+  .tag-in{color:var(--accent);font-weight:600;}
+  .tag-out{color:var(--accent2);font-weight:600;}
+  .section{display:none;}
+  .section.active{display:block;}
+  .info-box{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent);font-size:13px;color:var(--muted);line-height:1.6;}
+
+  /* CHART */
+  .chart-container{position:relative;height:200px;margin-top:8px;}
+  canvas{border-radius:8px;}
+
+  /* EXPORT GRID */
+  .export-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;}
+  @media(max-width:600px){.export-grid{grid-template-columns:1fr;}.tabs{gap:3px;}.tab{min-width:80px;font-size:12px;padding:8px 6px;}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <span class="header-icon">🚲</span>
+    <div>
+      <h1>MotionWerk Lager</h1>
+      <p>Fahrrad-Lagerverwaltung</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-excel" onclick="exportExcel('export')">📥 Excel Export</button>
+      <button id="dbxBtn" class="btn btn-ghost" onclick="dropboxAction()" title="Dropbox">
+        <span id="dbxIcon">☁</span> <span id="dbxLabel">Dropbox verbinden</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="monthBanner" style="display:none" class="month-end-banner">
+    <span class="icon">📅</span>
+    <div class="text">
+      <h3>Heute ist der letzte Tag des Monats – Inventur fällig!</h3>
+      <p>Bitte jetzt die Monats-Inventur als Excel-Datei exportieren.</p>
+    </div>
+    <button class="btn btn-amber" onclick="exportExcel('inventur')">📊 Inventur exportieren</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
+    <button class="tab" onclick="showTab('entry')">📦 Eingang</button>
+    <button class="tab" onclick="showTab('exit')">🚚 Ausgang</button>
+    <button class="tab" onclick="showTab('stock')">🏷️ Bestand</button>
+    <button class="tab" onclick="showTab('history')">📋 Verlauf</button>
+    <button class="tab" onclick="showTab('exportTab')">📥 Export</button>
+    <button class="tab" onclick="showTab('models')">⚙️ Modelle</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="tab-dashboard" class="section active">
+    <div class="stat-grid" id="stats"></div>
+    <div class="card">
+      <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Eingang &amp; Ausgang – letzte 6 Monate</div>
+      <div class="chart-container"><canvas id="chart"></canvas></div>
+    </div>
+    <div class="card" id="lowStockCard" style="display:none;border-color:var(--accent2)">
+      <div style="color:var(--accent2);font-weight:600;margin-bottom:10px;">⚠️ Niedriger Bestand</div>
+      <div id="lowStockList"></div>
+    </div>
+    <div class="card">
+      <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Aktueller Bestand nach Modell</div>
+      <div id="dashStock"></div>
+    </div>
+  </div>
+
+  <!-- EINGANG -->
+  <div id="tab-entry" class="section">
+    <div class="card">
+      <h3 style="margin-bottom:16px;font-size:18px;">Neuer Wareneingang</h3>
+      <div class="form-row">
+        <select id="entryModel" style="flex:2"><option value="">Modell wählen…</option></select>
+        <input type="number" id="entryQty" min="1" value="1" style="width:90px">
+        <input type="date" id="entryDate">
+      </div>
+      <div class="form-row">
+        <input id="entryNote" placeholder="Notiz (optional)" style="flex:1">
+        <button class="btn btn-green" onclick="submitEntry()">+ Einbuchen</button>
+      </div>
+      <div id="entrySaved" style="display:none;color:var(--accent);font-size:13px;margin-top:8px;">✓ Eingang gespeichert</div>
+      <div id="entryNoModels" style="display:none;color:var(--accent2);font-size:13px;margin-top:8px;">⚠ Bitte zuerst Modelle unter „Modelle" anlegen.</div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:14px;font-size:16px;">Letzte Eingänge</h3>
+      <div id="entryTable"></div>
+    </div>
+  </div>
+
+  <!-- AUSGANG -->
+  <div id="tab-exit" class="section">
+    <div class="card">
+      <h3 style="margin-bottom:16px;font-size:18px;">Warenausgang erfassen</h3>
+      <div class="form-row">
+        <input type="date" id="exitDate">
+        <input id="exitRecipient" placeholder="Abholer (optional)" style="flex:1">
+      </div>
+      <hr class="sep">
+      <div id="exitItems"></div>
+      <hr class="sep">
+      <div style="display:flex;justify-content:flex-end;">
+        <button class="btn btn-amber" onclick="submitExit()">✓ Ausgang buchen</button>
+      </div>
+      <div id="exitSelection" style="margin-top:10px;font-size:13px;color:var(--muted);"></div>
+    </div>
+    <!-- Bestätigung nach Buchung -->
+    <div id="exitConfirm" style="display:none;" class="confirm-banner">
+      <div class="cb-head">
+        <span style="font-size:22px;">✅</span>
+        <div>
+          <div class="cb-title">Ausgang erfolgreich gebucht!</div>
+          <div class="cb-sub" id="exitConfirmSub"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-green" onclick="printLastExit()">🖨 Begleitschein drucken</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('exitConfirm').style.display='none'">Schließen</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:14px;font-size:16px;">Letzte Ausgänge</h3>
+      <div id="exitTable"></div>
+    </div>
+  </div>
+
+  <!-- BESTAND -->
+  <div id="tab-stock" class="section">
+    <div class="card">
+      <div class="filter-bar">
+        <label>Modell:</label>
+        <select id="stockFilter" onchange="renderStock()"><option value="">Alle</option></select>
+      </div>
+      <div id="stockTable"></div>
+    </div>
+  </div>
+
+  <!-- VERLAUF -->
+  <div id="tab-history" class="section">
+    <div class="card">
+      <div class="filter-bar">
+        <label>Modell:</label>
+        <select id="histModel" onchange="renderHistory()"><option value="">Alle</option></select>
+        <label>Typ:</label>
+        <select id="histType" onchange="renderHistory()">
+          <option value="">Alle</option>
+          <option value="in">Eingang</option>
+          <option value="out">Ausgang</option>
+        </select>
+        <label>Von:</label><input type="date" id="histFrom" onchange="renderHistory()">
+        <label>Bis:</label><input type="date" id="histTo" onchange="renderHistory()">
+        <button class="btn btn-ghost" onclick="resetHistFilter()">Reset</button>
+      </div>
+      <div id="historyTable"></div>
+      <div id="histCount" style="margin-top:10px;font-size:13px;color:var(--muted);"></div>
+    </div>
+  </div>
+
+  <!-- EXPORT TAB -->
+  <div id="tab-exportTab" class="section">
+    <div class="card">
+      <h3 style="font-size:18px;margin-bottom:8px;">Excel-Export</h3>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:4px;">Jede Datei enthält 4 Tabellenblätter: <strong style="color:var(--text)">Inventur · Wareneingang · Warenausgang · Monatsübersicht</strong></p>
+      <div class="export-grid">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px;">
+          <h4 style="font-size:15px;margin-bottom:6px;">📊 Monats-Inventur</h4>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5;">Aktueller Lagerbestand + Summen. Als monatlicher Inventurnachweis. Dateiname enthält automatisch Datum.</p>
+          <button class="btn btn-excel" onclick="exportExcel('inventur')" id="inventurBtn">⬇ Inventur exportieren</button>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px;">
+          <h4 style="font-size:15px;margin-bottom:6px;">📋 Vollständiger Export</h4>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5;">Alle Buchungen seit Beginn. Für Buchhaltung oder Archivierung.</p>
+          <button class="btn btn-excel" onclick="exportExcel('export')">⬇ Alle Daten exportieren</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMPORT -->
+    <div class="card" style="border-color:#3a6aff44;">
+      <h3 style="font-size:18px;margin-bottom:6px;">📂 Daten importieren – PC-Wechsel</h3>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:16px;line-height:1.6;">
+        Lade eine zuvor exportierte Excel-Datei (<code style="color:var(--accent)">Fahrradlager_Export_*.xlsx</code>) hoch, um den kompletten Datenstand auf diesem PC wiederherzustellen.<br>
+        <strong style="color:var(--accent2);">⚠ Achtung:</strong> Der Import überschreibt alle aktuellen Daten auf diesem PC.
+      </p>
+
+      <!-- Drop-Zone -->
+      <div id="dropZone" style="border:2px dashed var(--border);border-radius:10px;padding:36px 20px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px;"
+        onclick="document.getElementById('importFile').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='#1a3025'"
+        ondragleave="this.style.borderColor='var(--border)';this.style.background=''"
+        ondrop="handleDrop(event)">
+        <div style="font-size:32px;margin-bottom:8px;">📄</div>
+        <div style="font-size:14px;color:var(--muted);">Excel-Datei hier hineinziehen<br><span style="font-size:12px;">oder klicken zum Auswählen</span></div>
+        <input type="file" id="importFile" accept=".xlsx" style="display:none" onchange="handleImportFile(this.files[0])">
+      </div>
+
+      <!-- Vorschau vor dem Import -->
+      <div id="importPreview" style="display:none;">
+        <hr class="sep">
+        <h4 style="font-size:15px;margin-bottom:12px;color:var(--accent);">✓ Datei erkannt – Vorschau</h4>
+        <div id="importPreviewContent"></div>
+        <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+          <button class="btn btn-green" onclick="confirmImport()">✓ Import bestätigen &amp; übernehmen</button>
+          <button class="btn btn-ghost" onclick="cancelImport()">Abbrechen</button>
+        </div>
+      </div>
+
+      <div id="importError" style="display:none;color:var(--danger);font-size:13px;margin-top:10px;padding:10px 14px;background:#3d1010;border-radius:8px;"></div>
+      <div id="importSuccess" style="display:none;color:var(--accent);font-size:13px;margin-top:10px;padding:10px 14px;background:#1a3d2a;border-radius:8px;"></div>
+    </div>
+
+    <div class="card" style="border-color:#2d7a4a;">
+      <div class="info-box">
+        <span style="font-size:22px;">☁</span>
+        <div>
+          <strong style="color:var(--text);">Dropbox – automatische Synchronisation</strong><br>
+          Wenn Dropbox verbunden ist, werden alle Buchungen automatisch in deiner Dropbox gespeichert (<code style="color:var(--accent)">motionwerk_lager.json</code>). Öffnest du die App auf einem anderen PC oder iPad, klick einmal auf „Dropbox verbinden" – danach sind alle Daten sofort da. Kein Export/Import nötig.
+        </div>
+      </div>
+    </div>
+    <div class="card" style="border-color:#2d7a4a;">
+      <div class="info-box">
+        <span style="font-size:22px;">📅</span>
+        <div>
+          <strong style="color:var(--text);">Automatische Erinnerung am Monatsende</strong><br>
+          Am letzten Tag des Monats erscheint oben ein oranger Banner. Einfach kurz die App öffnen → „Inventur exportieren" klicken → Datei landet im Download-Ordner, z.B. <code style="color:var(--accent)">Inventur_2025-05-31.xlsx</code>.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODELLE -->
+  <div id="tab-models" class="section">
+    <div class="card">
+      <h3 style="margin-bottom:14px;font-size:18px;">Fahrradmodelle verwalten</h3>
+      <div class="form-row">
+        <input id="newModel" placeholder="Neues Modell (z.B. Trek FX3)" style="flex:1" onkeydown="if(event.key==='Enter')addModel()">
+        <button class="btn btn-green" onclick="addModel()">+ Hinzufügen</button>
+      </div>
+      <hr class="sep">
+      <div id="modelList"></div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════════════
+// DROPBOX CONFIG – statischer Access Token
+// ═══════════════════════════════════════════════
+const DBX_FILE_PATH = '/motionwerk_lager.json';
+const DBX_TOKEN = 'sl.u.AGetzkKfIJDZAP4mLy74y-sc7on79E9Xqh31lHay7vd__lSHLV41M0gwXqlbtHCK3k8DFL98L1Bpskj170jSWRQfKAyplsTWd5lUAeGadpHdCO7DrrRfVUizHP8MfqvMr3Q0qNVOxpu8raA1HF3HYvi6em2pc6Ps9qyWyFwCz9RZJh_VUOVveVpwrSzuXEX-JEYKWTvpVbkUQf5pTp5BSQGcu_3Oi6j2G3z9-Heg5UhZ0EaawZyFPh4MZeF4A6p2V9rZtoKBPCc_HlB36VVjI0SM_FEkOdICo4Wb5x0MabJqgBKo_SIm_NDGwI_LYFTAEsYU5BeSCVCt1ipbj8G3YwwCWF3THsXJBZH3iw188UENx58nIqcPWZFRuqnGlb1_iZSeXgOh5yFUpYcRNQyC3arHa2uThkLbBngvtWCMqQIkHunlwDonHvgaeGPfp3qN9H_eFDT53zsH4gzANIweqZkgRAImCaZiNDDYYMpQZFvFXOdW4I5iw8UKwEKjvanEx2pXzsOV_whqiDWVAtbeTchrURdEOSbSqGephy5UG6RCKwzqXKDWe_HB2_XNuUSNELJhJdjFm9EpswoN0so2gDkvX7rFTBFNsKB7gzIsykkdFaJA6Y4RznntiIHnbp-tRXk_v-_c4Ui_rHONeZjUwlDV6oweOGnYVgea3PKgIGNX3VCByCcMsyJSufalKhopn7gpKTGBl9kzpqMjPcVsKoyZUk5AEJK3qznISwMCEVGKQ0TWaoNtLRh21kl7W7Hqj6lfnGw-Q7J-JTe0rzBhy2ao05CqqYd9Wz4r0-izJFe4XC8YvUg0VXYS7xMjXhJ9nAwPA6doajzURbGTznS-GGfEBCVErqagAQ8pt8f2B4G__N7uC2Rz3DvssbAefmqziPOUbAXiXDG3zPrP3vGBzei7zXcoBlg4K1UoYkoZFZQz1rvtT0yWvCAqtc4hFZ06wZPYQYDgzz-22gZrmqR4ndOzRaRIVCOjiYRDFgWFyuyQDxhypTaOB3kRolbCzV206DVXeLA-LtSz5C43JUm16zoO-o1DMXV7zW6vQUvsCpN-clFd4tPjdbJ7PhKXHwUoL6FIWF1cMHeAKYSKf1ySnJjxZsZyzYTwdJ1DgZoGuX-o1wwgJ4ApxcnW-_dsRcWXB3UzJx6JlszoWsg1eGeHq2ychfPE3MtLQnmAuGktvHr1RVclA49uMaji0glDATXplNc7IMnyc0UhF-goJz-nI5389t4aj47L4ZCROia8MYLKBB5x7yV_TwcAEvmKXUPhzC6aZL3Jmqjg3JeR5Pao2uY8voNEzqanfxrfXEJIJvaZzot1i8YMp86I7FYiQgFohcgPlyyoZFS-VwAMXbitMAMQZ8xeknwLLdg899pT18vmO8AFMkqOdBTyHZYWd89avrM';
+
+let dbxToken   = DBX_TOKEN;
+let dbxSyncing = false;
+
+function dropboxAction() {
+  alert('✅ Dropbox ist aktiv verbunden.\nDaten werden automatisch in deiner Dropbox gespeichert (Apps/MotionWerk/motionwerk_lager.json).');
+}
+
+// ── Read / Write ──────────────────────────────
+async function dropboxLoad() {
+  if(!dbxToken) return;
+  setDbxSyncing(true);
+  try {
+    const res = await fetch('https://content.dropboxapi.com/2/files/download', {
+      method:'POST',
+      headers:{
+        'Authorization':'Bearer '+dbxToken,
+        'Dropbox-API-Arg': JSON.stringify({path: DBX_FILE_PATH})
+      }
+    });
+    if(res.ok) {
+      const text = await res.text();
+      const parsed = JSON.parse(text);
+      if(parsed && parsed.models) {
+        DB = parsed;
+        localStorage.setItem(SK, JSON.stringify(DB));
+        renderAll();
+      }
+    } else if(res.status === 409) {
+      // Datei existiert noch nicht – beim ersten Mal normal
+      await dropboxSave();
+    } else if(res.status === 401) {
+      const ok = await dropboxRefresh();
+      if(ok) await dropboxLoad();
+      else { dbxToken=null; updateDbxUI(false); }
+    }
+  } catch(e) { console.warn('Dropbox load error:', e); }
+  setDbxSyncing(false);
+}
+
+async function dropboxSave() {
+  if(!dbxToken) return;
+  try {
+    const res = await fetch('https://content.dropboxapi.com/2/files/upload', {
+      method:'POST',
+      headers:{
+        'Authorization':'Bearer '+dbxToken,
+        'Content-Type':'application/octet-stream',
+        'Dropbox-API-Arg': JSON.stringify({
+          path: DBX_FILE_PATH, mode:'overwrite', autorename:false, mute:true
+        })
+      },
+      body: JSON.stringify(DB)
+    });
+    if(res.status === 401) {
+      const ok = await dropboxRefresh();
+      if(ok) await dropboxSave();
+      else { dbxToken=null; updateDbxUI(false); }
+    }
+  } catch(e) { console.warn('Dropbox save error:', e); }
+}
+
+// ── UI ────────────────────────────────────────
+function updateDbxUI(connected) {
+  const btn = document.getElementById('dbxBtn');
+  const icon = document.getElementById('dbxIcon');
+  const label = document.getElementById('dbxLabel');
+  if(connected) {
+    btn.className = 'btn btn-green';
+    icon.textContent = '☁';
+    label.textContent = 'Dropbox verbunden';
+  } else {
+    btn.className = 'btn btn-ghost';
+    icon.textContent = '☁';
+    label.textContent = 'Dropbox verbinden';
+  }
+}
+
+function setDbxSyncing(active) {
+  dbxSyncing = active;
+  const label = document.getElementById('dbxLabel');
+  if(label) label.textContent = active ? 'Synchronisiert…' : (dbxToken ? 'Dropbox verbunden' : 'Dropbox verbinden');
+}
+
+// ═══════════════════════════════════════════════
+// DATA LAYER  – localStorage + Dropbox
+// ═══════════════════════════════════════════════
+const SK = 'motionwerk_lager_v1';
+let DB = { models:[], entries:[], exits:[] };
+let lastExitBooked = null;
+
+function loadDB() {
+  try {
+    const raw = localStorage.getItem(SK);
+    if(raw) DB = JSON.parse(raw);
+  } catch(_) {}
+}
+
+function saveDB() {
+  localStorage.setItem(SK, JSON.stringify(DB));
+  // Dropbox async speichern (kein await nötig, läuft im Hintergrund)
+  if(dbxToken) dropboxSave();
+}
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+function todayStr() { return new Date().toISOString().slice(0,10); }
+function fmtDate(s) { if(!s) return '–'; const [y,m,d]=s.split('-'); return `${d}.${m}.${y}`; }
+function uid() { return Math.random().toString(36).slice(2,9); }
+
+function stockFor(model) {
+  const inn = DB.entries.filter(e=>e.model===model).reduce((s,e)=>s+e.qty,0);
+  const out = DB.exits.filter(e=>e.model===model).reduce((s,e)=>s+e.qty,0);
+  return inn - out;
+}
+
+function isLastDayOfMonth() {
+  const now = new Date(), tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate()+1);
+  return tomorrow.getMonth() !== now.getMonth();
+}
+
+function monthYM(offset=0) {
+  const d = new Date();
+  d.setMonth(d.getMonth()-offset);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+function monthLabel(offset=0) {
+  const d = new Date();
+  d.setMonth(d.getMonth()-offset);
+  return d.toLocaleString('de-DE',{month:'short',year:'2-digit'});
+}
+
+// ═══════════════════════════════════════════════
+// TAB NAVIGATION
+// ═══════════════════════════════════════════════
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════════
+function renderAll() {
+  renderDashboard();
+  renderEntryForm();
+  renderEntryTable();
+  renderExitForm();
+  renderExitTable();
+  renderStock();
+  renderHistory();
+  renderModels();
+  populateSelects();
+  // Monatsende-Banner
+  document.getElementById('monthBanner').style.display = isLastDayOfMonth() ? 'flex' : 'none';
+  // Inventur-Button Beschriftung
+  const now = new Date();
+  const mn = now.toLocaleString('de-DE',{month:'long',year:'numeric'});
+  const el = document.getElementById('inventurBtn');
+  if(el) el.textContent = `⬇ Inventur ${mn}`;
+}
+
+// ═══════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════
+function renderDashboard() {
+  const totalIn  = DB.entries.reduce((s,e)=>s+e.qty,0);
+  const totalOut = DB.exits.reduce((s,e)=>s+e.qty,0);
+  const totalStock = DB.models.reduce((s,m)=>s+Math.max(0,stockFor(m)),0);
+  const lowModels = DB.models.filter(m=>{ const s=stockFor(m); return s>0&&s<=2; });
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="stat-val">${totalStock}</div><div class="stat-label">Aktueller Bestand</div></div>
+    <div class="stat"><div class="stat-val">${totalIn}</div><div class="stat-label">Gesamt eingeliefert</div></div>
+    <div class="stat"><div class="stat-val amber">${totalOut}</div><div class="stat-label">Gesamt ausgegeben</div></div>
+    <div class="stat"><div class="stat-val ${lowModels.length>0?'amber':''}">${lowModels.length}</div><div class="stat-label">Niedrigbestand</div></div>
+  `;
+
+  // Niedrig-Bestand
+  const lc = document.getElementById('lowStockCard');
+  if(lowModels.length>0){
+    lc.style.display='block';
+    document.getElementById('lowStockList').innerHTML = lowModels.map(m=>
+      `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px;border-bottom:1px solid #2a3f30">
+        <span>${m}</span><span style="color:var(--accent2)">${stockFor(m)} Stück</span>
+      </div>`
+    ).join('');
+  } else { lc.style.display='none'; }
+
+  // Bestand-Tabelle
+  if(DB.models.length===0){
+    document.getElementById('dashStock').innerHTML='<div class="empty">Noch keine Modelle angelegt.</div>';
+  } else {
+    document.getElementById('dashStock').innerHTML = `
+      <table><thead><tr><th>Modell</th><th>Bestand</th><th>Status</th></tr></thead><tbody>
+      ${DB.models.map(m=>{
+        const s=stockFor(m);
+        const badge=s===0?'badge-red':s<=2?'badge-amber':'badge-green';
+        const label=s===0?'Leer':s<=2?'Niedrig':'OK';
+        return `<tr><td>${m}</td><td style="font-weight:700">${s}</td><td><span class="badge ${badge}">${label}</span></td></tr>`;
+      }).join('')}
+      </tbody></table>`;
+  }
+
+  // Chart
+  renderChart();
+}
+
+// ═══════════════════════════════════════════════
+// CHART (reines Canvas, kein Framework nötig)
+// ═══════════════════════════════════════════════
+let chartInstance = null;
+function renderChart() {
+  const canvas = document.getElementById('chart');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const container = canvas.parentElement;
+  canvas.width = container.clientWidth || 600;
+  canvas.height = 200;
+
+  const months = Array.from({length:6},(_,i)=>({
+    label: monthLabel(5-i),
+    inn: DB.entries.filter(e=>e.date?.slice(0,7)===monthYM(5-i)).reduce((s,e)=>s+e.qty,0),
+    out: DB.exits.filter(e=>e.date?.slice(0,7)===monthYM(5-i)).reduce((s,e)=>s+e.qty,0)
+  }));
+
+  const W=canvas.width, H=canvas.height;
+  const padL=36,padR=16,padT=16,padB=36;
+  const chartW=W-padL-padR, chartH=H-padT-padB;
+  const maxVal=Math.max(...months.map(m=>Math.max(m.inn,m.out)),1);
+  const barW=Math.floor(chartW/months.length);
+  const bw=Math.floor(barW*0.28);
+
+  ctx.clearRect(0,0,W,H);
+
+  // Grid
+  ctx.strokeStyle='#2a3f30'; ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=padT+chartH-(chartH/4*i);
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+chartW,y); ctx.stroke();
+    ctx.fillStyle='#7a9a82'; ctx.font='10px DM Sans,sans-serif'; ctx.textAlign='right';
+    ctx.fillText(Math.round(maxVal/4*i),padL-4,y+3);
+  }
+
+  // Bars
+  months.forEach((m,i)=>{
+    const x=padL+i*barW+barW/2;
+    const hIn=m.inn/maxVal*chartH, hOut=m.out/maxVal*chartH;
+    // Eingang
+    ctx.fillStyle='#4caf7d';
+    ctx.beginPath();
+    ctx.roundRect(x-bw-2,padT+chartH-hIn,bw,hIn,[3,3,0,0]);
+    ctx.fill();
+    // Ausgang
+    ctx.fillStyle='#f0a500';
+    ctx.beginPath();
+    ctx.roundRect(x+2,padT+chartH-hOut,bw,hOut,[3,3,0,0]);
+    ctx.fill();
+    // Label
+    ctx.fillStyle='#7a9a82'; ctx.font='11px DM Sans,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(m.label,x,H-6);
+  });
+
+  // Legende
+  ctx.fillStyle='#4caf7d'; ctx.fillRect(padL,4,12,8);
+  ctx.fillStyle='#7a9a82'; ctx.font='11px DM Sans,sans-serif'; ctx.textAlign='left';
+  ctx.fillText('Eingang',padL+16,12);
+  ctx.fillStyle='#f0a500'; ctx.fillRect(padL+80,4,12,8);
+  ctx.fillStyle='#7a9a82'; ctx.fillText('Ausgang',padL+96,12);
+}
+
+// ═══════════════════════════════════════════════
+// EINGANG
+// ═══════════════════════════════════════════════
+function renderEntryForm() {
+  const sel = document.getElementById('entryModel');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Modell wählen…</option>' +
+    DB.models.map(m=>`<option value="${m}" ${m===cur?'selected':''}>${m}</option>`).join('');
+  document.getElementById('entryDate').value = document.getElementById('entryDate').value || todayStr();
+  document.getElementById('entryNoModels').style.display = DB.models.length===0?'block':'none';
+}
+
+function submitEntry() {
+  const model = document.getElementById('entryModel').value;
+  const qty   = parseInt(document.getElementById('entryQty').value)||0;
+  const date  = document.getElementById('entryDate').value || todayStr();
+  const note  = document.getElementById('entryNote').value.trim();
+  if(!model||qty<1) return;
+  DB.entries.push({id:uid(),model,qty,date,note});
+  saveDB();
+  document.getElementById('entryModel').value='';
+  document.getElementById('entryQty').value=1;
+  document.getElementById('entryNote').value='';
+  const saved = document.getElementById('entrySaved');
+  saved.style.display='block';
+  setTimeout(()=>saved.style.display='none',2000);
+  renderAll();
+}
+
+function stornoEntry(id) {
+  if(!confirm('Einbuchung wirklich stornieren? Der Bestand wird entsprechend reduziert.')) return;
+  DB.entries = DB.entries.filter(e=>e.id!==id);
+  saveDB(); renderAll();
+}
+
+function renderEntryTable() {
+  const el = document.getElementById('entryTable');
+  if(!el) return;
+  if(DB.entries.length===0){ el.innerHTML='<div class="empty">Noch keine Eingänge erfasst.</div>'; return; }
+  const rows = [...DB.entries].reverse().slice(0,50);
+  el.innerHTML=`<table><thead><tr><th>Datum</th><th>Modell</th><th>Anzahl</th><th>Notiz</th><th>Aktion</th></tr></thead><tbody>
+    ${rows.map(e=>`<tr>
+      <td>${fmtDate(e.date)}</td><td>${e.model}</td>
+      <td class="tag-in">+${e.qty}</td>
+      <td style="color:var(--muted)">${e.note||'–'}</td>
+      <td><button class="btn btn-red" style="padding:3px 9px;font-size:12px" onclick="stornoEntry('${e.id}')">↩ Storno</button></td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+
+// ═══════════════════════════════════════════════
+// AUSGANG
+// ═══════════════════════════════════════════════
+function renderExitForm() {
+  const el = document.getElementById('exitItems');
+  if(!el) return;
+  document.getElementById('exitDate').value = document.getElementById('exitDate').value || todayStr();
+  const items = DB.models.map(m=>({model:m,stock:stockFor(m)})).filter(i=>i.stock>0);
+  if(items.length===0){ el.innerHTML='<div class="empty">Kein Lagerbestand vorhanden.</div>'; return; }
+  el.innerHTML = items.map(i=>`
+    <div class="exit-item">
+      <label>${i.model} <span class="stock-tag">(Bestand: ${i.stock})</span></label>
+      <input type="number" id="eq_${i.model.replace(/\s/g,'_')}" min="0" max="${i.stock}" value="0"
+        oninput="updateExitSelection()" style="width:80px">
+    </div>`).join('');
+  updateExitSelection();
+}
+
+function updateExitSelection() {
+  const items = DB.models.map(m=>({model:m,stock:stockFor(m)})).filter(i=>i.stock>0);
+  const selected = items.filter(i=>{
+    const el = document.getElementById('eq_'+i.model.replace(/\s/g,'_'));
+    return el && parseInt(el.value)>0;
+  }).map(i=>({model:i.model,qty:parseInt(document.getElementById('eq_'+i.model.replace(/\s/g,'_')).value)}));
+  const txt = selected.length>0 ? 'Auswahl: '+selected.map(i=>`${i.model} ×${i.qty}`).join(', ') : '';
+  document.getElementById('exitSelection').textContent = txt;
+}
+
+function submitExit() {
+  const date      = document.getElementById('exitDate').value || todayStr();
+  const recipient = document.getElementById('exitRecipient').value.trim();
+  const items     = DB.models.map(m=>({model:m,stock:stockFor(m)})).filter(i=>i.stock>0);
+  const selected  = items.filter(i=>{
+    const el = document.getElementById('eq_'+i.model.replace(/\s/g,'_'));
+    return el && parseInt(el.value)>0;
+  }).map(i=>({model:i.model,qty:parseInt(document.getElementById('eq_'+i.model.replace(/\s/g,'_')).value)}));
+  if(!selected.length) return;
+
+  // Buchen
+  selected.forEach(i=>DB.exits.push({id:uid(),model:i.model,qty:i.qty,date,recipient}));
+  saveDB();
+
+  // Merken für Druck
+  lastExitBooked = {items:selected, recipient, date};
+
+  // Bestätigung anzeigen
+  const sub = selected.map(i=>`${i.model} ×${i.qty}`).join(', ')+(recipient?` – Abholer: ${recipient}`:'');
+  document.getElementById('exitConfirmSub').textContent = sub;
+  document.getElementById('exitConfirm').style.display = 'block';
+
+  // Reset Felder
+  document.getElementById('exitRecipient').value='';
+  renderAll();
+  // Scroll zur Bestätigung
+  document.getElementById('exitConfirm').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function printLastExit() {
+  if(!lastExitBooked) return;
+  printPickup(lastExitBooked.items, lastExitBooked.recipient, lastExitBooked.date);
+}
+
+function stornoExit(id) {
+  if(!confirm('Ausbuchung wirklich stornieren? Der Bestand wird entsprechend zurückgebucht.')) return;
+  DB.exits = DB.exits.filter(e=>e.id!==id);
+  saveDB(); renderAll();
+}
+
+function renderExitTable() {
+  const el = document.getElementById('exitTable');
+  if(!el) return;
+  if(DB.exits.length===0){ el.innerHTML='<div class="empty">Noch keine Ausgänge erfasst.</div>'; return; }
+  const rows = [...DB.exits].reverse().slice(0,50);
+  el.innerHTML=`<table><thead><tr><th>Datum</th><th>Modell</th><th>Anzahl</th><th>Abholer</th><th>Aktion</th></tr></thead><tbody>
+    ${rows.map(e=>`<tr>
+      <td>${fmtDate(e.date)}</td><td>${e.model}</td>
+      <td class="tag-out">−${e.qty}</td>
+      <td style="color:var(--muted)">${e.recipient||'–'}</td>
+      <td style="display:flex;gap:5px;flex-wrap:wrap">
+        <button class="btn btn-ghost" style="padding:3px 9px;font-size:12px" onclick="printPickup([{model:'${e.model.replace(/'/g,"\\'")}',qty:${e.qty}}],'${(e.recipient||'').replace(/'/g,"\\'")}','${e.date}')" title="Begleitschein nochmals drucken">🖨</button>
+        <button class="btn btn-red" style="padding:3px 9px;font-size:12px" onclick="stornoExit('${e.id}')">↩ Storno</button>
+      </td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+
+// ═══════════════════════════════════════════════
+// BESTAND
+// ═══════════════════════════════════════════════
+function renderStock() {
+  const filter = document.getElementById('stockFilter')?.value||'';
+  const el = document.getElementById('stockTable');
+  if(!el) return;
+  const rows = DB.models.filter(m=>!filter||m===filter).map(m=>({
+    model:m,
+    inn:DB.entries.filter(e=>e.model===m).reduce((s,e)=>s+e.qty,0),
+    out:DB.exits.filter(e=>e.model===m).reduce((s,e)=>s+e.qty,0),
+    stock:stockFor(m)
+  }));
+  if(rows.length===0){ el.innerHTML='<div class="empty">Keine Modelle.</div>'; return; }
+  el.innerHTML=`<table><thead><tr><th>Modell</th><th>Eingeliefert</th><th>Ausgegeben</th><th>Bestand</th><th>Status</th></tr></thead><tbody>
+    ${rows.map(r=>{
+      const badge=r.stock===0?'badge-red':r.stock<=2?'badge-amber':'badge-green';
+      const label=r.stock===0?'Leer':r.stock<=2?'Niedrig':'OK';
+      return `<tr>
+        <td style="font-weight:500">${r.model}</td>
+        <td class="tag-in">${r.inn}</td>
+        <td class="tag-out">${r.out}</td>
+        <td style="font-weight:700;font-size:15px">${r.stock}</td>
+        <td><span class="badge ${badge}">${label}</span></td>
+      </tr>`;
+    }).join('')}
+  </tbody></table>`;
+}
+
+// ═══════════════════════════════════════════════
+// VERLAUF
+// ═══════════════════════════════════════════════
+function renderHistory() {
+  const fm = document.getElementById('histModel')?.value||'';
+  const ft = document.getElementById('histType')?.value||'';
+  const ff = document.getElementById('histFrom')?.value||'';
+  const ft2= document.getElementById('histTo')?.value||'';
+  const el = document.getElementById('historyTable');
+  if(!el) return;
+
+  let all = [
+    ...DB.entries.map(e=>({...e,type:'in'})),
+    ...DB.exits.map(e=>({...e,type:'out'}))
+  ].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+  if(fm) all=all.filter(e=>e.model===fm);
+  if(ft) all=all.filter(e=>e.type===ft);
+  if(ff) all=all.filter(e=>e.date>=ff);
+  if(ft2) all=all.filter(e=>e.date<=ft2);
+
+  document.getElementById('histCount').textContent=`${all.length} Einträge`;
+
+  if(all.length===0){ el.innerHTML='<div class="empty">Keine Einträge für diesen Filter.</div>'; return; }
+
+  el.innerHTML=`<table><thead><tr><th>Datum</th><th>Typ</th><th>Modell</th><th>Anzahl</th><th>Info</th><th>Aktion</th></tr></thead><tbody>
+    ${all.map(e=>{
+      const badge=e.type==='in'?'badge-green':'badge-amber';
+      const label=e.type==='in'?'Eingang':'Ausgang';
+      const val=(e.type==='in'?'+':'−')+e.qty;
+      const cls=e.type==='in'?'tag-in':'tag-out';
+      const info=e.note||e.recipient||'–';
+      const stornoFn=e.type==='in'?`stornoEntry('${e.id}')`:`stornoExit('${e.id}')`;
+      return `<tr>
+        <td>${fmtDate(e.date)}</td>
+        <td><span class="badge ${badge}">${label}</span></td>
+        <td>${e.model}</td>
+        <td class="${cls}">${val}</td>
+        <td style="color:var(--muted);font-size:13px">${info}</td>
+        <td><button class="btn btn-red" style="padding:3px 9px;font-size:12px" onclick="${stornoFn}">↩ Storno</button></td>
+      </tr>`;
+    }).join('')}
+  </tbody></table>`;
+}
+
+function resetHistFilter() {
+  document.getElementById('histModel').value='';
+  document.getElementById('histType').value='';
+  document.getElementById('histFrom').value='';
+  document.getElementById('histTo').value='';
+  renderHistory();
+}
+
+// ═══════════════════════════════════════════════
+// MODELLE
+// ═══════════════════════════════════════════════
+function renderModels() {
+  const el = document.getElementById('modelList');
+  if(!el) return;
+  if(DB.models.length===0){ el.innerHTML='<div class="empty">Noch keine Modelle angelegt.</div>'; return; }
+  el.innerHTML = DB.models.map(m=>`
+    <span class="model-tag">${m}
+      <button class="model-del" onclick="removeModel('${m.replace(/'/g,"\\'")}')">×</button>
+    </span>`).join('');
+}
+
+function addModel() {
+  const input = document.getElementById('newModel');
+  const m = input.value.trim();
+  if(!m||DB.models.includes(m)) return;
+  DB.models.push(m);
+  saveDB(); input.value=''; renderAll();
+}
+
+function removeModel(m) {
+  const used = DB.entries.some(e=>e.model===m)||DB.exits.some(e=>e.model===m);
+  if(used&&!confirm(`Modell „${m}" hat Buchungen. Trotzdem löschen?`)) return;
+  DB.models = DB.models.filter(x=>x!==m);
+  saveDB(); renderAll();
+}
+
+// ═══════════════════════════════════════════════
+// SELECTS BEFÜLLEN
+// ═══════════════════════════════════════════════
+function populateSelects() {
+  ['stockFilter','histModel'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    const cur=el.value;
+    el.innerHTML='<option value="">Alle</option>'+DB.models.map(m=>`<option value="${m}" ${m===cur?'selected':''}>${m}</option>`).join('');
+  });
+}
+
+// ═══════════════════════════════════════════════
+// DRUCKEN
+// ═══════════════════════════════════════════════
+function printPickup(items, recipient, date) {
+  const total = items.reduce((s,i)=>s+i.qty,0);
+  const docNr = Math.random().toString(36).slice(2,9).toUpperCase();
+  const w = window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Abholbestätigung</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Georgia',serif;color:#111;padding:55px 65px;max-width:800px;margin:auto}
+    header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:36px;padding-bottom:18px;border-bottom:3px solid #1c3d2e}
+    h1{font-size:26px;color:#1c3d2e;letter-spacing:-0.5px}
+    .sub{font-size:12px;color:#777;margin-top:4px}
+    .meta{text-align:right;font-size:13px;color:#444;line-height:2}
+    table{width:100%;border-collapse:collapse;margin:26px 0}
+    thead tr{background:#1c3d2e;color:#fff}
+    th{padding:10px 14px;text-align:left;font-weight:600;font-size:13px}
+    td{padding:9px 14px;font-size:13px;border-bottom:1px solid #dde8e3}
+    tr:nth-child(even) td{background:#f4f9f6}
+    .total td{font-weight:bold;background:#d8eee3;border-top:2px solid #1c3d2e}
+    .note{margin:18px 0;font-size:13px;color:#333;line-height:1.7;padding:14px 16px;background:#f3faf6;border-left:4px solid #3a7d5a}
+    .sig-row{display:flex;gap:60px;margin-top:72px}
+    .sig-box{flex:1}
+    .sig-line{border-top:1px solid #666;margin-bottom:7px;padding-top:7px}
+    .sig-label{font-size:11px;color:#777}
+    footer{margin-top:44px;font-size:10px;color:#bbb;text-align:center}
+    @media print{body{padding:30px 40px}}
+  </style></head><body>
+  <header>
+    <div><h1>🚲 Abholbestätigung</h1><div class="sub">Fahrrad-Lagerverwaltung – MotionWerk Lager</div></div>
+    <div class="meta">
+      <div><strong>Datum:</strong> ${fmtDate(date)}</div>
+      <div><strong>Abholer:</strong> ${recipient||'____________________'}</div>
+      <div><strong>Dok-Nr.:</strong> ${docNr}</div>
+    </div>
+  </header>
+  <table>
+    <thead><tr><th>#</th><th>Fahrradmodell</th><th>Anzahl</th></tr></thead>
+    <tbody>
+      ${items.map((it,i)=>`<tr><td>${i+1}</td><td>${it.model}</td><td>${it.qty}</td></tr>`).join('')}
+      <tr class="total"><td></td><td>Gesamt</td><td>${total}</td></tr>
+    </tbody>
+  </table>
+  <div class="note">Hiermit bestätige ich den ordnungsgemäßen Empfang der oben aufgeführten ${total} Fahrrad${total!==1?'räder':''} in einwandfreiem Zustand.</div>
+  <div class="sig-row">
+    <div class="sig-box"><div class="sig-line"></div><div class="sig-label">Datum &amp; Unterschrift Abholer</div></div>
+    <div class="sig-box"><div class="sig-line"></div><div class="sig-label">Datum &amp; Unterschrift Ausgabe</div></div>
+  </div>
+  <footer>Erstellt am ${new Date().toLocaleString('de-DE')} – Fahrrad-Lagerverwaltung MotionWerk Lager</footer>
+  </body></html>`);
+  w.document.close(); w.focus(); setTimeout(()=>w.print(),400);
+}
+
+// ═══════════════════════════════════════════════
+// EXCEL EXPORT
+// ═══════════════════════════════════════════════
+function exportExcel(type) {
+  if(typeof XLSX==='undefined'){ alert('Excel-Bibliothek wird noch geladen, bitte kurz warten und nochmals versuchen.'); return; }
+  const wb = XLSX.utils.book_new();
+  const now = new Date();
+  const ds = now.toLocaleDateString('de-DE');
+  const ts = now.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  const mn = now.toLocaleString('de-DE',{month:'long',year:'numeric'});
+
+  // Blatt 1: Inventur
+  const totalStock = DB.models.reduce((s,m)=>s+Math.max(0,stockFor(m)),0);
+  const stockRows=[
+    ['FAHRRAD-LAGERVERWALTUNG – INVENTUR'],
+    [`Erstellt am: ${ds} um ${ts} Uhr`],
+    [`Monat: ${mn}`],[],
+    ['Modell','Gesamt Eingang','Gesamt Ausgang','Aktueller Bestand','Status'],
+    ...DB.models.map(m=>{
+      const inn=DB.entries.filter(e=>e.model===m).reduce((s,e)=>s+e.qty,0);
+      const out=DB.exits.filter(e=>e.model===m).reduce((s,e)=>s+e.qty,0);
+      const stock=inn-out;
+      return [m,inn,out,stock,stock===0?'Leer':stock<=2?'Niedriger Bestand':'OK'];
+    }),
+    [],[' GESAMT','','',totalStock,'']
+  ];
+  const ws1=XLSX.utils.aoa_to_sheet(stockRows);
+  ws1['!cols']=[{wch:30},{wch:16},{wch:16},{wch:18},{wch:18}];
+  XLSX.utils.book_append_sheet(wb,ws1,'Inventur');
+
+  // Blatt 2: Wareneingang
+  const entRows=[
+    ['WARENEINGANG – VOLLSTÄNDIGE LISTE'],[`Export: ${ds}`],[],
+    ['Datum','Modell','Anzahl','Notiz'],
+    ...[...DB.entries].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(e=>[fmtDate(e.date),e.model,e.qty,e.note||''])
+  ];
+  const ws2=XLSX.utils.aoa_to_sheet(entRows);
+  ws2['!cols']=[{wch:14},{wch:30},{wch:10},{wch:30}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Wareneingang');
+
+  // Blatt 3: Warenausgang
+  const exRows=[
+    ['WARENAUSGANG – VOLLSTÄNDIGE LISTE'],[`Export: ${ds}`],[],
+    ['Datum','Modell','Anzahl','Abholer'],
+    ...[...DB.exits].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(e=>[fmtDate(e.date),e.model,e.qty,e.recipient||''])
+  ];
+  const ws3=XLSX.utils.aoa_to_sheet(exRows);
+  ws3['!cols']=[{wch:14},{wch:30},{wch:10},{wch:24}];
+  XLSX.utils.book_append_sheet(wb,ws3,'Warenausgang');
+
+  // Blatt 4: Monatsübersicht
+  const sumRows=[
+    ['MONATSÜBERSICHT – LETZTE 6 MONATE'],[`Export: ${ds}`],[],
+    ['Monat','Eingang','Ausgang','Netto'],
+    ...Array.from({length:6},(_,i)=>{
+      const d=new Date(); d.setMonth(d.getMonth()-(5-i));
+      const ym=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      const label=d.toLocaleString('de-DE',{month:'long',year:'numeric'});
+      const inn=DB.entries.filter(e=>e.date?.slice(0,7)===ym).reduce((s,e)=>s+e.qty,0);
+      const out=DB.exits.filter(e=>e.date?.slice(0,7)===ym).reduce((s,e)=>s+e.qty,0);
+      return [label,inn,out,inn-out];
+    })
+  ];
+  const ws4=XLSX.utils.aoa_to_sheet(sumRows);
+  ws4['!cols']=[{wch:22},{wch:12},{wch:12},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,ws4,'Monatsübersicht');
+
+  const stamp=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, type==='inventur'?`Inventur_${stamp}.xlsx`:`Fahrradlager_Export_${stamp}.xlsx`);
+}
+
+// ═══════════════════════════════════════════════
+// IMPORT
+// ═══════════════════════════════════════════════
+let importData = null; // gepufferte Import-Daten bis zur Bestätigung
+
+function handleDrop(event) {
+  event.preventDefault();
+  document.getElementById('dropZone').style.borderColor = 'var(--border)';
+  document.getElementById('dropZone').style.background = '';
+  const file = event.dataTransfer.files[0];
+  if(file) handleImportFile(file);
+}
+
+function handleImportFile(file) {
+  clearImportMessages();
+  if(!file || !file.name.endsWith('.xlsx')) {
+    showImportError('Bitte eine .xlsx-Datei auswählen.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'array'});
+      const result = parseImportWorkbook(wb);
+      if(result.error) { showImportError(result.error); return; }
+      importData = result.data;
+      showImportPreview(result.data, result.source);
+    } catch(err) {
+      showImportError('Datei konnte nicht gelesen werden: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseImportWorkbook(wb) {
+  // Strategie: Versuche zuerst die "Wareneingang"/"Warenausgang"-Blätter (vollständiger Export).
+  // Falls nicht vorhanden, versuche "Inventur" (nur Bestandsabgleich).
+  const sheetNames = wb.SheetNames;
+  const hasEingang = sheetNames.some(s => s.toLowerCase().includes('wareneingang') || s.toLowerCase().includes('eingang'));
+  const hasAusgang = sheetNames.some(s => s.toLowerCase().includes('warenausgang') || s.toLowerCase().includes('ausgang'));
+  const hasInventur = sheetNames.some(s => s.toLowerCase().includes('inventur'));
+
+  if(hasEingang && hasAusgang) {
+    return parseFullExport(wb);
+  } else if(hasInventur) {
+    return parseInventurOnly(wb);
+  } else {
+    // Fallback: versuche alle Sheets zu lesen
+    return parseFullExport(wb);
+  }
+}
+
+function parseFullExport(wb) {
+  // Lese Wareneingang-Blatt
+  const einSheet = wb.Sheets[wb.SheetNames.find(s => s.toLowerCase().includes('eingang') || s.toLowerCase().includes('wareneingang')) || wb.SheetNames[1]];
+  // Lese Warenausgang-Blatt
+  const ausSheet = wb.Sheets[wb.SheetNames.find(s => s.toLowerCase().includes('ausgang') || s.toLowerCase().includes('warenausgang')) || wb.SheetNames[2]];
+
+  if(!einSheet || !ausSheet) return {error:'Konnte die Tabellenblätter "Wareneingang" und "Warenausgang" nicht finden. Bitte einen vollständigen Export verwenden.'};
+
+  const einRows = XLSX.utils.sheet_to_json(einSheet, {header:1, defval:''});
+  const ausRows = XLSX.utils.sheet_to_json(ausSheet, {header:1, defval:''});
+
+  // Kopfzeile suchen (enthält "Datum", "Modell", "Anzahl")
+  const einHeader = findHeaderRow(einRows, ['datum','modell','anzahl']);
+  const ausHeader = findHeaderRow(ausRows, ['datum','modell','anzahl']);
+
+  if(einHeader === -1) return {error:'Spaltenüberschriften ("Datum", "Modell", "Anzahl") im Wareneingang-Blatt nicht gefunden.'};
+  if(ausHeader === -1) return {error:'Spaltenüberschriften ("Datum", "Modell", "Anzahl") im Warenausgang-Blatt nicht gefunden.'};
+
+  const einCols = mapColumns(einRows[einHeader], ['datum','modell','anzahl','notiz']);
+  const ausCols = mapColumns(ausRows[ausHeader], ['datum','modell','anzahl','abholer']);
+
+  const entries = [];
+  for(let i = einHeader+1; i < einRows.length; i++) {
+    const row = einRows[i];
+    const model = String(row[einCols.modell]||'').trim();
+    const qty   = parseInt(row[einCols.anzahl])||0;
+    if(!model || qty <= 0) continue;
+    entries.push({
+      id: uid(),
+      model,
+      qty,
+      date: parseDateCell(row[einCols.datum]),
+      note: String(row[einCols.notiz]||'').trim()
+    });
+  }
+
+  const exits = [];
+  for(let i = ausHeader+1; i < ausRows.length; i++) {
+    const row = ausRows[i];
+    const model = String(row[ausCols.modell]||'').trim();
+    const qty   = parseInt(row[ausCols.anzahl])||0;
+    if(!model || qty <= 0) continue;
+    exits.push({
+      id: uid(),
+      model,
+      qty,
+      date: parseDateCell(row[ausCols.datum]),
+      recipient: String(row[ausCols.abholer]||'').trim()
+    });
+  }
+
+  if(entries.length === 0 && exits.length === 0) return {error:'Keine Buchungen in der Datei gefunden. Ist es ein vollständiger Export?'};
+
+  // Modelle aus Buchungen ableiten (eindeutige Liste)
+  const models = [...new Set([...entries.map(e=>e.model), ...exits.map(e=>e.model)])].filter(Boolean);
+
+  return {
+    data: {models, entries, exits},
+    source: 'vollständiger Export'
+  };
+}
+
+function parseInventurOnly(wb) {
+  // Nur Inventur-Blatt: gibt nur Bestand, keine Einzelbuchungen
+  // Wir legen pro Modell eine einzige Einbuchung mit dem Bestand an
+  const invSheet = wb.Sheets[wb.SheetNames.find(s=>s.toLowerCase().includes('inventur')) || wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(invSheet, {header:1, defval:''});
+  const headerRow = findHeaderRow(rows, ['modell','bestand']);
+  if(headerRow === -1) return {error:'Spalten "Modell" und "Bestand" im Inventur-Blatt nicht gefunden.'};
+
+  const cols = mapColumns(rows[headerRow], ['modell','bestand','aktueller bestand']);
+  const bestandCol = cols['aktueller bestand'] !== undefined ? cols['aktueller bestand'] : cols['bestand'];
+  const today = todayStr();
+  const entries = [];
+  const models = [];
+
+  for(let i = headerRow+1; i < rows.length; i++) {
+    const row = rows[i];
+    const model = String(row[cols.modell]||'').trim();
+    const qty   = parseInt(row[bestandCol])||0;
+    if(!model || model.toUpperCase() === 'GESAMT' || qty <= 0) continue;
+    models.push(model);
+    entries.push({id:uid(), model, qty, date:today, note:'Import aus Inventur'});
+  }
+
+  if(models.length === 0) return {error:'Keine Modelle mit Bestand > 0 in der Inventur gefunden.'};
+  return {
+    data: {models, entries, exits:[]},
+    source: 'Inventur (nur Bestände, keine Einzelbuchungen)'
+  };
+}
+
+// Hilfsfunktionen
+function findHeaderRow(rows, keywords) {
+  for(let i=0; i<Math.min(rows.length,10); i++) {
+    const cells = rows[i].map(c=>String(c||'').toLowerCase());
+    if(keywords.every(k => cells.some(c=>c.includes(k)))) return i;
+  }
+  return -1;
+}
+
+function mapColumns(headerRow, keys) {
+  const map = {};
+  headerRow.forEach((cell,i) => {
+    const c = String(cell||'').toLowerCase().trim();
+    keys.forEach(k => { if(c.includes(k)) map[k] = i; });
+  });
+  return map;
+}
+
+function parseDateCell(val) {
+  if(!val) return todayStr();
+  const s = String(val).trim();
+  // Format TT.MM.JJJJ → JJJJ-MM-TT
+  const de = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if(de) return `${de[3]}-${de[2].padStart(2,'0')}-${de[1].padStart(2,'0')}`;
+  // ISO-Format
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  // Excel-Seriennummer
+  if(!isNaN(Number(val))) {
+    const d = new Date(Math.round((Number(val) - 25569) * 86400 * 1000));
+    return d.toISOString().slice(0,10);
+  }
+  return todayStr();
+}
+
+function showImportPreview(data, source) {
+  const totalIn  = data.entries.reduce((s,e)=>s+e.qty,0);
+  const totalOut = data.exits.reduce((s,e)=>s+e.qty,0);
+  const totalStock = data.models.reduce((s,m)=>{
+    const inn=data.entries.filter(e=>e.model===m).reduce((s,e)=>s+e.qty,0);
+    const out=data.exits.filter(e=>e.model===m).reduce((s,e)=>s+e.qty,0);
+    return s+Math.max(0,inn-out);
+  },0);
+
+  document.getElementById('importPreviewContent').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;">
+        <div style="font-size:22px;color:var(--accent);font-weight:700;">${data.models.length}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;">Modelle</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;">
+        <div style="font-size:22px;color:var(--accent);font-weight:700;">${data.entries.length}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;">Einbuchungen</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;">
+        <div style="font-size:22px;color:var(--accent2);font-weight:700;">${data.exits.length}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;">Ausbuchungen</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;">
+        <div style="font-size:22px;color:var(--accent);font-weight:700;">${totalStock}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;">Gesamtbestand</div>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Quelle: <strong style="color:var(--text)">${source}</strong></div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:6px;"><strong style="color:var(--text)">Modelle:</strong> ${data.models.join(', ')||'–'}</div>
+    <div style="font-size:12px;color:var(--accent2);margin-top:10px;">⚠ Alle aktuellen Daten auf diesem PC werden durch den Import ersetzt.</div>
+  `;
+  document.getElementById('importPreview').style.display = 'block';
+}
+
+function confirmImport() {
+  if(!importData) return;
+  DB = importData;
+  saveDB();
+  importData = null;
+  document.getElementById('importPreview').style.display = 'none';
+  document.getElementById('importFile').value = '';
+  showImportSuccess('✓ Import erfolgreich! Alle Daten wurden übernommen.');
+  renderAll();
+}
+
+function cancelImport() {
+  importData = null;
+  document.getElementById('importPreview').style.display = 'none';
+  document.getElementById('importFile').value = '';
+  clearImportMessages();
+}
+
+function clearImportMessages() {
+  document.getElementById('importError').style.display = 'none';
+  document.getElementById('importSuccess').style.display = 'none';
+  document.getElementById('importPreview').style.display = 'none';
+}
+
+function showImportError(msg) {
+  const el = document.getElementById('importError');
+  el.textContent = '✗ ' + msg;
+  el.style.display = 'block';
+}
+
+function showImportSuccess(msg) {
+  const el = document.getElementById('importSuccess');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(()=>el.style.display='none', 5000);
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+loadDB();
+renderAll();
+window.addEventListener('resize', renderChart);
+
+// Dropbox: beim Start automatisch laden
+updateDbxUI(true);
+dropboxLoad();
+</script>
+</body>
+</html>
