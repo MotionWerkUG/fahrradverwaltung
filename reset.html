@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Passwort zurücksetzen – Sandu Motion</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"DM Sans",sans-serif;background:#0f0e0c;color:#f0ece4;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.box{background:#1a1812;border:1px solid #3a3020;border-radius:12px;padding:36px 32px;width:100%;max-width:400px;}
+.logo{text-align:center;margin-bottom:24px;}
+.logo img{height:80px;}
+h2{text-align:center;font-size:16px;color:#c4a882;margin-bottom:20px;font-family:sans-serif;font-weight:600;}
+label{display:block;font-size:11px;color:#8a7d6a;margin-bottom:4px;margin-top:12px;}
+input{width:100%;background:#242018;border:1px solid #3a3020;color:#f0ece4;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;}
+input:focus{border-color:#c4a882;}
+.btn{width:100%;padding:10px;background:#c4a882;color:#0f0e0c;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:16px;}
+.btn:hover{background:#d4b892;}
+.msg{font-size:12px;margin-top:10px;text-align:center;min-height:16px;}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="logo"><img src="data:image/png;base64,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" alt="Sandu Motion"></div>
+  <h2>Neues Passwort setzen</h2>
+  <div id="formDiv">
+    <label>Neues Passwort</label>
+    <input type="password" id="pw1" placeholder="Mindestens 8 Zeichen">
+    <label>Passwort wiederholen</label>
+    <input type="password" id="pw2" placeholder="Passwort wiederholen">
+    <button class="btn" onclick="doReset()">Passwort speichern</button>
+    <div class="msg" id="msg"></div>
+  </div>
+</div>
+<script>
+var token = new URLSearchParams(window.location.search).get('token');
+if(!token) { document.getElementById('formDiv').innerHTML = '<p style="color:#e05252;text-align:center;">Ungültiger Link.</p>'; }
+
+async function doReset(){
+  var pw1=document.getElementById('pw1').value;
+  var pw2=document.getElementById('pw2').value;
+  var msg=document.getElementById('msg');
+  if(!pw1||pw1.length<8){msg.style.color='#e05252';msg.textContent='Passwort muss mindestens 8 Zeichen haben.';return;}
+  if(pw1!==pw2){msg.style.color='#e05252';msg.textContent='Passwörter stimmen nicht überein.';return;}
+  msg.style.color='#8a7d6a';msg.textContent='Speichern...';
+  var r=await fetch('/api/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token,password:pw1})});
+  var d=await r.json();
+  if(d.ok){
+    msg.style.color='#c4a882';msg.textContent='Passwort geändert! Du wirst weitergeleitet...';
+    setTimeout(function(){window.location.href='/';'},2000);
+  } else {
+    msg.style.color='#e05252';msg.textContent=d.error||'Fehler – Link abgelaufen?';
+  }
+}
+</script>
+</body>
+</html>
